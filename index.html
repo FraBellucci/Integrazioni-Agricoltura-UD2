@@ -214,7 +214,7 @@
         <div class="final-message" id="finalMessage"></div>
         
         <div class="controls">
-            <div class="score">Scenario: <span id="currentScenario">1</span>/4 | Punteggio: <span id="score">0</span>/12</div>
+            <div class="score">Scenario: <span id="currentScenario">1</span>/4 | Punteggio: <span id="score">0</span>/8</div>
             <div class="buttons">
                 <button class="btn-next" id="btnNext" onclick="nextScenario()">Prossimo Scenario →</button>
                 <button class="btn-replay" onclick="resetGame()">🔄 Rigioca</button>
@@ -383,15 +383,19 @@
             `;
             
             scenario.decisions.forEach((decision, dIndex) => {
+                // Randomizza l'ordine delle opzioni
+                const shuffledOptions = decision.options.map((opt, idx) => ({...opt, originalIndex: idx}))
+                    .sort(() => Math.random() - 0.5);
+                
                 html += `
                     <div class="decision" id="decision-${dIndex}">
                         <div class="decision-question">${dIndex + 1}. ${decision.question}</div>
                         <div class="options" id="options-${dIndex}">
                 `;
                 
-                decision.options.forEach((option, oIndex) => {
+                shuffledOptions.forEach((option, oIndex) => {
                     html += `
-                        <div class="option" data-decision="${dIndex}" data-option="${oIndex}" onclick="selectOption(${dIndex}, ${oIndex})">
+                        <div class="option" data-decision="${dIndex}" data-option="${oIndex}" data-correct="${option.correct}" onclick="selectOption(${dIndex}, ${oIndex})">
                             ${option.text}
                         </div>
                     `;
@@ -414,13 +418,15 @@
             
             if (scenarioAnswers[decisionIndex] !== undefined) return;
             
-            const isCorrect = decision.options[optionIndex].correct;
+            // Prendi il valore corretto dall'attributo data-correct dell'opzione cliccata
+            const clickedOption = options[optionIndex];
+            const isCorrect = clickedOption.dataset.correct === 'true';
             
-            options.forEach((opt, idx) => {
+            options.forEach((opt) => {
                 opt.classList.add('disabled');
-                if (decision.options[idx].correct) {
+                if (opt.dataset.correct === 'true') {
                     opt.classList.add('correct');
-                } else if (idx === optionIndex) {
+                } else if (opt === clickedOption) {
                     opt.classList.add('incorrect');
                 }
             });
@@ -437,7 +443,16 @@
             scenarioAnswers[decisionIndex] = isCorrect;
             updateScore();
             
-            if (scenarioAnswers.length === scenarios[currentScenario].decisions.length) {
+            // Controlla se TUTTE le decisioni hanno una risposta
+            let allAnswered = true;
+            for (let i = 0; i < scenarios[currentScenario].decisions.length; i++) {
+                if (scenarioAnswers[i] === undefined) {
+                    allAnswered = false;
+                    break;
+                }
+            }
+            
+            if (allAnswered) {
                 document.getElementById('btnNext').classList.add('show');
             }
         }
