@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UD2 - Organizzazione Lavoro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .container {
+            width: 800px;
+            height: 550px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .header {
+            background: #5a67d8;
+            color: white;
+            padding: 12px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 18px;
+            margin-bottom: 4px;
+        }
+        .header p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        .game-area {
+            flex: 1;
+            padding: 15px 20px;
+            overflow-y: auto;
+        }
+        .scenario-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: #ebf4ff;
+            border-left: 4px solid #5a67d8;
+            border-radius: 4px;
+        }
+        .scenario-desc {
+            font-size: 13px;
+            color: #4a5568;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+        .decision {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f7fafc;
+            border-radius: 6px;
+            border: 2px solid #e2e8f0;
+        }
+        .decision-question {
+            font-size: 13px;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .option {
+            padding: 8px 10px;
+            background: white;
+            border: 2px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .option:hover:not(.disabled) {
+            border-color: #5a67d8;
+            transform: translateX(3px);
+        }
+        .option.selected {
+            border-color: #5a67d8;
+            background: #ebf4ff;
+        }
+        .option.correct {
+            border-color: #48bb78;
+            background: #c6f6d5;
+        }
+        .option.incorrect {
+            border-color: #fc8181;
+            background: #fed7d7;
+        }
+        .option.disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .feedback {
+            margin-top: 8px;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            display: none;
+        }
+        .feedback.show {
+            display: block;
+        }
+        .feedback.correct {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #48bb78;
+        }
+        .feedback.incorrect {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+        .btn-next {
+            background: #48bb78;
+            color: white;
+            padding: 8px 16px;
+            font-size: 13px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            display: none;
+        }
+        .btn-next:hover {
+            background: #38a169;
+        }
+        .btn-next.show {
+            display: block;
+        }
+        .controls {
+            padding: 12px 20px;
+            background: #f7fafc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #e2e8f0;
+        }
+        .score {
+            font-size: 13px;
+            font-weight: bold;
+            color: #5a67d8;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 8px 16px;
+            font-size: 13px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .btn-replay {
+            background: #5a67d8;
+            color: white;
+        }
+        .btn-replay:hover {
+            background: #4c51bf;
+        }
+        .btn-close {
+            background: #718096;
+            color: white;
+        }
+        .btn-close:hover {
+            background: #4a5568;
+        }
+        .final-message {
+            text-align: center;
+            padding: 20px;
+            font-size: 15px;
+            font-weight: bold;
+            color: #5a67d8;
+            display: none;
+        }
+        .final-message.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>UD2 - Organizzazione del Lavoro: Ambienti di Lavoro</h1>
+            <p>Prendi le decisioni corrette per organizzare in sicurezza ogni ambiente</p>
+        </div>
+        
+        <div class="game-area" id="gameArea"></div>
+        
+        <div class="final-message" id="finalMessage"></div>
+        
+        <div class="controls">
+            <div class="score">Scenario: <span id="currentScenario">1</span>/4 | Punteggio: <span id="score">0</span>/12</div>
+            <div class="buttons">
+                <button class="btn-next" id="btnNext" onclick="nextScenario()">Prossimo Scenario →</button>
+                <button class="btn-replay" onclick="resetGame()">🔄 Rigioca</button>
+                <button class="btn-close" onclick="window.close()">← Torna al corso</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const scenarios = [
+            {
+                title: "Scenario 1: Campo Aperto - Operazioni di Raccolta",
+                description: "Devi organizzare un campo per la raccolta estiva. Scegli le misure corrette per ogni aspetto.",
+                decisions: [
+                    {
+                        question: "Come organizzi i turni durante l'estate con temperature elevate?",
+                        options: [
+                            { text: "Lavoro continuato 8-18", correct: false },
+                            { text: "Attività faticose nelle ore fresche, pause ogni 30 min con T>32°C", correct: true },
+                            { text: "Turni normali senza modifiche", correct: false }
+                        ],
+                        feedback: {
+                            correct: "✓ Esatto! La pianificazione deve prevenire lo stress termico (art. 15 D.Lgs 81/2008).",
+                            incorrect: "✗ Sbagliato. Con temperature elevate servono turni modificati e pause frequenti."
+                        }
+                    },
+                    {
+                        question: "Quale larghezza minima devono avere i percorsi per i mezzi agricoli?",
+                        options: [
+                            { text: "Larghezza del mezzo più 50 cm per lato", correct: false },
+                            { text: "Larghezza del mezzo più 1 metro per lato", correct: true },
+                            { text: "Non ci sono requisiti specifici", correct: false }
+                        ],
+                        feedback: {
+                            correct: "✓ Corretto! I percorsi devono garantire margini di sicurezza e spazi di manovra adeguati.",
+                            incorrect: "✗ Errato. Servono margini di almeno 1m per lato e spazi di manovra calcolati correttamente."
+                        }
+                    }
+                ]
+            },
+            {
+                title: "Scenario 2: Serra - Coltivazione Pomodori",
+                description: "Devi organizzare una serra per pomodori. Assicura un ambiente sicuro ed ergonomico.",
+                decisions: [
+                    {
+                        question: "Quale larghezza minima devono avere i corridoi principali della serra?",
+                        options: [
+                            { text: "80 cm ", correct: false },
+                            { text: "150 cm ", correct: true },
+                            { text: "200 cm per tutti i corridoi", correct: false }
+                        ],
+                        feedback: {
+                            correct: "✓ Esatto! I corridoi principali richiedono 150 cm per transito bidirezionale sicuro.",
+                            incorrect: "✗ Sbagliato. I corridoi principali devono essere almeno 150 cm, i secondari 80-120 cm."
+                        }
+                    },
+                    {
+                        question: "Durante i trattamenti fitosanitari in serra, cosa devi fare?",
+                        options: [
+                            { text: "Tutti possono rimanere se indossano la mascherina", correct: false },
+                            { text: "Allontanare tutti, rispettare tempo rientro 24h+", correct: true },
+                            { text: "Aprire le finestre durante il trattamento", correct: false }
+                        ],
+                        feedback: {
+                            correct: "✓ Perfetto! I trattamenti in serra richiedono massima protezione e tempi di rientro (Reg. CE 1107/2009).",
+                            incorrect: "✗ Errato. Serve allontanamento personale, DPI completi, ventilazione e rispetto tempi rientro."
+                        }
+                    },
+                    
+                ]
+            },
+            {
+                title: "Scenario 3: Bosco - Cantiere di Abbattimento",
+                description: "Stai organizzando un cantiere boschivo per abbattimento ed esbosco. La sicurezza è prioritaria.",
+                decisions: [
+                    {
+                        question: "Quale distanza di sicurezza minima dalla zona di abbattimento?",
+                        options: [
+                            { text: "20 metri", correct: false },
+                            { text: "50 metri", correct: true },
+                            { text: "Non ci sono distanze obbligatorie", correct: false }
+                        ],
+                        feedback: {
+                            correct: "✓ Esatto! La zona di abbattimento richiede raggio minimo 50m libero da personale.",
+                            incorrect: "✗ Errato. Servono almeno 50m di distanza dalla zona di abbattimento per sicurezza."
+                        }
+                    },
+                    {
+                        question: "Gli operatori motosega devono avere:",
+                        options: [
+                            { text: "Esperienza pratica", correct: false },
+                            { text: "Patentino e DPI antitaglio", correct: true },
+                            { text: "Formazione generica sulla sicurezza", correct: false }
+                        ],
+                        feedback: {
+                            correct: "✓ Perfetto! Il patentino motosega è obbligatorio per uso professionale (Accordo Stato-Regioni).",
+                            incorrect: "✗ Sbagliato. Il patentino motosega (32 ore) è obbligatorio per operatori professionali."
+                        }
+                    },
+                    
+                ]
+            },
+            {
+                title: "Scenario 4: Allevamento Bovini - Organizzazione Stalla",
+                description: "Devi organizzare una stalla per 50 bovini garantendo sicurezza per operatori e benessere animale.",
+                decisions: [
+                    {
+                        question: "Come organizzi i percorsi nella stalla?",
+                        options: [
+                            { text: "Percorsi misti operatori/animali per ottimizzare spazio", correct: false },
+                            { text: "Corridoi operatori separati, orari alternati se non separabili", correct: true },
+                            { text: "Percorsi per animali 150cm", correct: false }
+                        ],
+                        feedback: {
+                            correct: "✓ Esatto! La separazione dei percorsi riduce rischi di investimento e stress animali (art. 28 D.Lgs 81/2008).",
+                            incorrect: "✗ Sbagliato. Serve separazione percorsi operatori/animali o almeno utilizzo alternato programmato."
+                        }
+                    },
+                   
+                    {
+                        question: "Quale altezza minima per garantire ventilazione adeguata nella stalla?",
+                        options: [
+                            { text: "2,5 metri sono sufficienti", correct: false },
+                            { text: "4 metri per facilitare ventilazione e ridurre rischi biologici", correct: true },
+                            { text: "Non ci sono requisiti specifici", correct: false }
+                        ],
+                        feedback: {
+                            correct: "✓ Corretto! L'altezza adeguata garantisce ventilazione e riduce concentrazione agenti biologici (norme UNI stalle).",
+                            incorrect: "✗ Sbagliato. Servono almeno 4m di altezza per ventilazione efficace e controllo agenti biologici."
+                        }
+                    }
+                ]
+            }
+        ];
+
+        let currentScenario = 0;
+        let score = 0;
+        let scenarioAnswers = [];
+
+        function initGame() {
+            currentScenario = 0;
+            score = 0;
+            scenarioAnswers = [];
+            document.getElementById('finalMessage').classList.remove('show');
+            document.getElementById('btnNext').classList.remove('show');
+            loadScenario(0);
+        }
+
+        function loadScenario(index) {
+            if (index >= scenarios.length) {
+                showFinalMessage();
+                return;
+            }
+
+            currentScenario = index;
+            scenarioAnswers = [];
+            document.getElementById('currentScenario').textContent = index + 1;
+            document.getElementById('btnNext').classList.remove('show');
+            
+            const scenario = scenarios[index];
+            const gameArea = document.getElementById('gameArea');
+            
+            let html = `
+                <div class="scenario-title">${scenario.title}</div>
+                <div class="scenario-desc">${scenario.description}</div>
+            `;
+            
+            scenario.decisions.forEach((decision, dIndex) => {
+                html += `
+                    <div class="decision" id="decision-${dIndex}">
+                        <div class="decision-question">${dIndex + 1}. ${decision.question}</div>
+                        <div class="options" id="options-${dIndex}">
+                `;
+                
+                decision.options.forEach((option, oIndex) => {
+                    html += `
+                        <div class="option" data-decision="${dIndex}" data-option="${oIndex}" onclick="selectOption(${dIndex}, ${oIndex})">
+                            ${option.text}
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                        <div class="feedback" id="feedback-${dIndex}"></div>
+                    </div>
+                `;
+            });
+            
+            gameArea.innerHTML = html;
+        }
+
+        function selectOption(decisionIndex, optionIndex) {
+            const decision = scenarios[currentScenario].decisions[decisionIndex];
+            const options = document.querySelectorAll(`#options-${decisionIndex} .option`);
+            const feedback = document.getElementById(`feedback-${decisionIndex}`);
+            
+            if (scenarioAnswers[decisionIndex] !== undefined) return;
+            
+            const isCorrect = decision.options[optionIndex].correct;
+            
+            options.forEach((opt, idx) => {
+                opt.classList.add('disabled');
+                if (decision.options[idx].correct) {
+                    opt.classList.add('correct');
+                } else if (idx === optionIndex) {
+                    opt.classList.add('incorrect');
+                }
+            });
+            
+            if (isCorrect) {
+                score++;
+                feedback.className = 'feedback correct show';
+                feedback.textContent = decision.feedback.correct;
+            } else {
+                feedback.className = 'feedback incorrect show';
+                feedback.textContent = decision.feedback.incorrect;
+            }
+            
+            scenarioAnswers[decisionIndex] = isCorrect;
+            updateScore();
+            
+            if (scenarioAnswers.length === scenarios[currentScenario].decisions.length) {
+                document.getElementById('btnNext').classList.add('show');
+            }
+        }
+
+        function nextScenario() {
+            loadScenario(currentScenario + 1);
+        }
+
+        function updateScore() {
+            document.getElementById('score').textContent = score;
+        }
+
+        function showFinalMessage() {
+            const gameArea = document.getElementById('gameArea');
+            gameArea.innerHTML = '';
+            
+            const finalMsg = document.getElementById('finalMessage');
+            const maxScore = scenarios.reduce((sum, s) => sum + s.decisions.length, 0);
+            const percentage = Math.round((score / maxScore) * 100);
+            
+            if (percentage >= 90) {
+                finalMsg.innerHTML = `🎉 Eccellente! ${score}/${maxScore} (${percentage}%)<br>Hai dimostrato ottima conoscenza dell'organizzazione sicura degli ambienti di lavoro!`;
+            } else if (percentage >= 70) {
+                finalMsg.innerHTML = `✓ Buon lavoro! ${score}/${maxScore} (${percentage}%)<br>Hai una buona comprensione delle misure di sicurezza. Ripassa gli scenari per migliorare.`;
+            } else {
+                finalMsg.innerHTML = `📚 Risultato: ${score}/${maxScore} (${percentage}%)<br>Rivedi i contenuti dell'UD2 su layout, percorsi sicuri e pianificazione operativa.`;
+            }
+            finalMsg.classList.add('show');
+        }
+
+        function resetGame() {
+            score = 0;
+            updateScore();
+            initGame();
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
